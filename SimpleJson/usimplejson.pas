@@ -49,9 +49,9 @@ type
     function Eat(const aTokenType: specialize TNullable<TTokenType>): TJsonToken;
   protected
     fJsonKeyValues: TStringList;
-    procedure ParseJsonObject(const keyName: string; const aJsonValues: TStrings);
+    procedure ParseJsonObject(const keyName: string; var aKeyValues: TStringArray);
     procedure ParseJsonArray(const aKeyName: string);
-    procedure ParseJsonExpression(const keyName: string; const aJsonKeyValues: TStrings);
+    procedure ParseJsonExpression(const keyName: string; var aKeyValues: TStringArray);
     procedure Parse();
   public
     constructor Create();
@@ -123,12 +123,6 @@ var
   tmp: string;
   tokenType: TTokenType;
   numbers: TStringArray = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.');
-  //symbols: TCharArray = ('{', '}', '[', ']', ',', ':');
-
-  //procedure SetRemaining;
-  //begin
-  //  remaining := string(fRemaining).Substring(fCursor, StrLen(fRemaining) - fCursor);
-  //end;
 
   function StartsWith(aStartsWithText: array of string; c: integer): boolean;
   var
@@ -184,7 +178,7 @@ begin
       jsonToken.TokenValue := Copy(fRemaining, fCursor, (nextTermPosition - fCursor) + 1);//Slice(fCursor, nextTermPosition);// fRmaining.Substring(fCursor, nextTermPosition + 1);
       result := jsonToken;
     end else
-    if StartsWith(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], 1) (*fRemaining[fCursor] in numbers*) then
+    if fRemaining[fCursor] in numbers then
     begin
       number := fCursor;
       while fRemaining[number] in numbers do
@@ -269,14 +263,14 @@ end;
 
 // JsonObject
 //     : JsonExpression COMMA JsonExpressioin COMMA ...
-procedure TSimpleJsonBase.ParseJsonObject(const keyName: string; const aJsonValues: TStrings);
+procedure TSimpleJsonBase.ParseJsonObject(const keyName: string; var aKeyValues: TStringArray);
 begin
   repeat
     if fLookaheadToken = TTokenType.Comma then Eat(TTokenType.Comma);
 
     if fLookaheadToken = TTokenType.CloseCurlyBrace then exit;
 
-    ParseJsonExpression(keyName, aJsonValues);
+    ParseJsonExpression(keyName, aKeyValues);
 
     //aJsonValues.Add(Format('%s=%s', [keyValue.Key, keyValue.Value]));
 
@@ -289,10 +283,9 @@ end;
 //     : JsonObject COMMA JsonObject COMMA .. JsonObject
 procedure TSimpleJsonBase.ParseJsonArray(const aKeyName: string);
 var
-  jsonValues: TStringList;
   objIndex: integer;
-  //guid: TGuid;
   key: string;
+  keyValues: TStringArray;
 begin
 
   objIndex := 0;
@@ -302,29 +295,21 @@ begin
     key := 'root'
   end;
   key := key + ':';
-  jsonValues := TStringList.Create;
-  try
-    while fLookaheadToken <> TTokenType.CloseBracket do
-    begin
 
-      Eat(TTokenType.OpenCurlyBrace);
-      ParseJsonObject(key + IntToStr(ObjIndex), jsonValues);
-      fJsonKeyValues.AddStrings(jsonValues);
-      Eat(TTokenType.CloseCurlyBrace);
+  while fLookaheadToken <> TTokenType.CloseBracket do
+  begin
 
-      Inc(objIndex);
-      jsonValues.Clear();
-      //if CreateGUID(guid) = 0 then raise Exception.Create('Unable to create a guid');
+    Eat(TTokenType.OpenCurlyBrace);
+    ParseJsonObject(key + IntToStr(ObjIndex), keyValues);
+    fJsonKeyValues.AddStrings(keyValues);
+    Eat(TTokenType.CloseCurlyBrace);
 
+    Inc(objIndex);
+    SetLength(keyValues, 0);
 
-      //fJsonKeyValues.Add(key +'='+
-
-      if fLookaheadToken = TTokenType.Comma then Eat(TTokenType.Comma);
-    end;
-
-  finally
-    jsonValues.Free;
+    if fLookaheadToken = TTokenType.Comma then Eat(TTokenType.Comma);
   end;
+
 end;
 
 // JsonExpression
@@ -333,7 +318,7 @@ end;
 //     | TEXT COLON ARRAY
 //     | NOTHING
 procedure TSimpleJsonBase.ParseJsonExpression(const keyName: string;
-  const aJsonKeyValues: TStrings);
+  var aKeyValues: TStringArray);
 var
   jsonKey, jsonValue: TJsonToken;
   key: string;
@@ -345,7 +330,7 @@ begin
     TTokenType.OpenCurlyBrace:
       begin
         Eat(TTokenType.OpenCurlyBrace);
-        ParseJsonObject(jsonKey.TokenValue, aJsonKeyValues);
+        ParseJsonObject(jsonKey.TokenValue, aKeyValues);
         Eat(TTokenType.CloseCurlyBrace);
       end;
     TTokenType.OpenBracket:
@@ -368,7 +353,9 @@ begin
       else
         key := jsonKey.TokenValue;
 
-      aJsonKeyValues.Add(key +'='+ jsonValue.TokenValue);
+      //aJsonKeyValues.Add(key +'='+ jsonValue.TokenValue);
+      SetLength(aKeyValues, Length(aKeyValues) + 1);
+      aKeyValues[High(aKeyValues)] := key +'='+ jsonValue.TokenValue;
       //WriteLn(Format('Key: %s, Value: %s', [key, jsonValue.TokenValue]));
       //WriteLn(Format('lookahead: %s', [fLookaheadToken.Value.TokenValue]));
     end;
@@ -378,7 +365,7 @@ end;
 
 procedure TSimpleJsonBase.Parse();
 var
-  jsonValues: TStringList;
+  jsonValues: TStringArray;
 begin
   case fLookaheadToken.Value.TokenType of
     TTokenType.OpenBracket:
@@ -391,13 +378,13 @@ begin
     TTokenType.OpenCurlyBrace:
       begin
         Eat(TTokenType.OpenCurlyBrace);
-        jsonValues := TStringList.Create;
-        try
+        //jsonValues := TStringList.Create;
+        //try
           ParseJsonObject(string.Empty, jsonValues);
           fJsonKeyValues.AddStrings(jsonValues);
-        finally
-          jsonValues.Free;
-        end;
+        //finally
+        //  jsonValues.Free;
+        //end;
         Eat(TTokenType.CloseCurlyBrace);
       end;
   end;

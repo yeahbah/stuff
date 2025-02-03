@@ -56,13 +56,13 @@ begin
   //TestTokenizer(json);
 
   TestSimpleModel();
-
-
+  //
+  //
   TestJsonArray();
 
   TestModelWithArray();
 
-  //TestBigFile();
+  TestBigFile();
 
   // stop program loop
   Terminate;
