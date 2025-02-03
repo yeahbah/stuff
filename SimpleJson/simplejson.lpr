@@ -58,11 +58,11 @@ begin
   TestSimpleModel();
   //
   //
-  TestJsonArray();
+  //TestJsonArray();
 
-  TestModelWithArray();
+  //TestModelWithArray();
 
-  TestBigFile();
+  //TestBigFile();
 
   // stop program loop
   Terminate;
@@ -103,12 +103,20 @@ begin
   json := '{ "hello": "world!", "nice": "one", "number": 123, "bool1": true, "bool2": false, "nullprop": null, '
           + '"obj": {"sub1": "value1", "sub2": "value1", } }';
 
+  WriteLn('Deserializing...');
   ticks1 := GetTickCount();
   model.DeserializeString(json);
   ticks2 := GetTickCount();
   WriteLn(Format('Simple model took %d ms', [ticks2 - ticks1]));
-
   WriteLn(model.ToString());
+
+  WriteLn('Serializing...');
+  ticks1 := GetTickCount();
+  json := model.Serialize();
+  ticks2 := GetTickCount();
+  WriteLn(Format('took %d ms', [ticks2 - ticks1]));
+  WriteLn(json);
+
 end;
 
 procedure TSimpleJson.TestModelWithArray;

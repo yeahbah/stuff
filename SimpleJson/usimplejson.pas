@@ -378,13 +378,10 @@ begin
     TTokenType.OpenCurlyBrace:
       begin
         Eat(TTokenType.OpenCurlyBrace);
-        //jsonValues := TStringList.Create;
-        //try
-          ParseJsonObject(string.Empty, jsonValues);
-          fJsonKeyValues.AddStrings(jsonValues);
-        //finally
-        //  jsonValues.Free;
-        //end;
+
+        ParseJsonObject(string.Empty, jsonValues);
+        fJsonKeyValues.AddStrings(jsonValues);
+
         Eat(TTokenType.CloseCurlyBrace);
       end;
   end;
@@ -420,8 +417,28 @@ begin
 end;
 
 function TSimpleJsonBase.Serialize(): string;
+var
+  key: string;
+  sb: TStringBuilder;
+  i: integer;
 begin
   result := '';
+  sb := TStringBuilder.Create;
+  try
+    sb.Append('{');
+    for i := 0 to fJsonKeyValues.Count - 1 do
+    begin
+      key := fJsonKeyValues.Names[i];
+      sb.Append(key.QuotedString('"'));
+      sb.Append(':');
+      sb.Append(fJsonKeyValues.Values[key].QuotedString('"'));
+      sb.Append(',');
+    end;
+    sb.Append('}');
+    result := sb.ToString();
+  finally
+    sb.Free;
+  end;
 end;
 
 initialization
