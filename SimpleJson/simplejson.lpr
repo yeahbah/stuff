@@ -55,14 +55,14 @@ begin
   //        + '"obj": {"sub1": "value1", "sub2": "value1", } }';
   //TestTokenizer(json);
 
-  //TestSimpleModel();
+  TestSimpleModel();
 
-  //
-  //TestJsonArray();
-  //
-  //TestModelWithArray();
 
-  TestBigFile();
+  TestJsonArray();
+
+  TestModelWithArray();
+
+  //TestBigFile();
 
   // stop program loop
   Terminate;
@@ -186,7 +186,7 @@ begin
   WriteLn('*** Deserilizing 5MB json file ***');
 
   jsonFile := TStringList.Create;
-  jsonFile.LoadFromFile('/home/arnold-diaz/small-64KB.json');
+  jsonFile.LoadFromFile('/home/arnold-diaz/five-MB.json');
 
   model := TBigJson.Create;
 

@@ -58,7 +58,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="simplejson"/>
+      <Filename Value="./bin/simplejson"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

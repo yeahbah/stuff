@@ -28,20 +28,15 @@ type
     TokenValue: string;
   end;
 
-  TKeyValue = record
-    Key: string;
-    Value: string;
-  end;
-
   { TJsonTokenizer }
 
   TJsonTokenizer = class
   private
     fCursor: integer;
-    fRemaining: pchar;
+    fRemaining: string;
     function HasMoreTokens(): boolean;
   public
-    constructor Create(const aJsonText: pchar);
+    constructor Create(const aJsonText: string);
     function GetNextToken(): specialize TNullable<TJsonToken>;
   end;
 
@@ -110,13 +105,13 @@ end;
 
 function TJsonTokenizer.HasMoreTokens(): boolean;
 begin
-  Result := fCursor < StrLen(fRemaining);
+  Result := fCursor <= fRemaining.Length;
 end;
 
-constructor TJsonTokenizer.Create(const aJsonText: pchar);
+constructor TJsonTokenizer.Create(const aJsonText: string);
 begin
   fRemaining := aJsonText;
-  fCursor := 0;
+  fCursor := 1;
 end;
 
 function TJsonTokenizer.GetNextToken(): specialize TNullable<TJsonToken>;
@@ -157,31 +152,9 @@ var
     result := false;
   end;
 
-  function IndexOf(const aChar: char; aStartIndex: integer): integer;
-  begin
-    while aStartIndex < Length(fRemaining) do
-    begin
-      if fRemaining[aStartIndex] = aChar then exit(aStartIndex);
-      Inc(aStartIndex);
-    end;
-  end;
-
-  function Slice(aStartIndex, aEndIndex: integer): pchar;
-  var
-    s: string;
-  begin
-    s := '';
-    while (aStartIndex <= aEndIndex) and (aStartIndex < Length(fRemaining)) do
-    begin
-      s := s + fRemaining[aStartIndex];
-      Inc(aStartIndex);
-    end;
-    result := @s[1];
-  end;
-
 begin
   result.Clear;
-  if not HasMoreTokens() then exit(result);
+  //if not HasMoreTokens() then exit(result);
 
   //SetRemaining();
   while HasMoreTokens() do
@@ -189,7 +162,7 @@ begin
     if fRemaining[fCursor] = ' ' then
     begin
       Inc(fCursor);
-      if not HasMoreTokens() then exit(result);
+      //if not HasMoreTokens() then exit(result);
 
       //SetRemaining();
 
@@ -206,9 +179,9 @@ begin
     //if remaining.StartsWith('"') then
     if fRemaining[fCursor] = '"' then
     begin
-      nextTermPosition := IndexOf('"', fCursor + 1);// remaining.IndexOf('"', fCursor + 1);
+      nextTermPosition := Pos('"', fRemaining, fCursor + 1); //IndexOf('"', fCursor + 1);// remaining.IndexOf('"', fCursor + 1);
       jsonToken.TokenType := TTokenType.Text;
-      jsonToken.TokenValue := Slice(fCursor, nextTermPosition);// fRmaining.Substring(fCursor, nextTermPosition + 1);
+      jsonToken.TokenValue := Copy(fRemaining, fCursor, (nextTermPosition - fCursor) + 1);//Slice(fCursor, nextTermPosition);// fRmaining.Substring(fCursor, nextTermPosition + 1);
       result := jsonToken;
     end else
     if StartsWith(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], 1) (*fRemaining[fCursor] in numbers*) then
@@ -232,23 +205,23 @@ begin
     end else
     if StartsWith(['True', 'False'], 4) then
     begin
-      nextTermPosition := IndexOf(',', fCursor + 1);// fRemaining.IndexOf(',', fCursor); //remaining.IndexOf(',', 1);
+      nextTermPosition := Pos(',', fRemaining, fCursor + 1); //IndexOf(',', fCursor + 1);// fRemaining.IndexOf(',', fCursor); //remaining.IndexOf(',', 1);
       if nextTermPosition < 0 then
       begin
-        nextTermPosition := IndexOf('}', fCursor + 1);// remaining.IndexOf('}', 1);
+        nextTermPosition := Pos('}', fCursor + 1);// remaining.IndexOf('}', 1);
       end;
       jsonToken.TokenType := TTokenType.Bool;
-      jsonToken.TokenValue := Slice(fCursor, nextTermPosition - 1);// remaining.Substring(0, nextTermPosition);
+      jsonToken.TokenValue := Copy(fRemaining, fCursor, nextTermPosition - fCursor); //Slice(fCursor, nextTermPosition - 1);// remaining.Substring(0, nextTermPosition);
       result := jsonToken;
     end else
     if StartsWith(['null'], 4) then
     begin
-      nextTermPosition := IndexOf(',', fCursor + 1);// remaining.IndexOf(',', 1);
+        nextTermPosition := Pos(',', fRemaining, fCursor + 1);//IndexOf(',', fCursor + 1);// remaining.IndexOf(',', 1);
       if nextTermPosition < 0 then
       begin
-        nextTermPosition := IndexOf('}', fCursor + 1);// remaining.IndexOf('}', 1);
+        nextTermPosition := Pos('}', fRemaining, fCursor + 1);// remaining.IndexOf('}', 1);
       end;
-      jsonToken.TokenValue := Slice(fCursor, nextTermPosition - 1);// remaining.Substring(0, nextTermPosition);
+      jsonToken.TokenValue := Copy(fRemaining, fCursor, nextTermPosition - fCursor);//Slice(fCursor, nextTermPosition - 1);// remaining.Substring(0, nextTermPosition);
       jsonToken.TokenType := TTokenType.Null;
       result := jsonToken;
     end;
